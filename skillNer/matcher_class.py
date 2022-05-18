@@ -237,13 +237,13 @@ class SkillsGetter:
     ):
 
         skills = []
-        doc = self.nlp(text_obj.lemmed())
+        
 
-        for match_id, start, end in matcher(doc):
+        for match_id, start, end in matcher(text_obj.lemmed_doc):
             id_ = matcher.vocab.strings[match_id]
             # add full_match to store
             skills.append({'skill_id': id_,
-                           'doc_node_value': str(doc[start:end]),
+                           'doc_node_value': str(text_obj.lemmed_doc[start:end]),
                            'score': 1,
                            'doc_node_id': list(range(start, end))})
             # mutate text tokens metadata (unmatch attr)
@@ -259,13 +259,13 @@ class SkillsGetter:
     ):
         skills = []
 
-        doc = self.nlp(text_obj.abv_text)
-        for match_id, start, end in matcher(doc):
+
+        for match_id, start, end in matcher(text_obj.abv_doc):
             id_ = matcher.vocab.strings[match_id]
             if text_obj[start].is_matchable:
                 skills.append({'skill_id': id_,
                                'score': 1,
-                               'doc_node_value': str(doc[start:end]),
+                               'doc_node_value': str(text_obj.abv_doc[start:end]),
                                'doc_node_id': [start]})
                 # mutate matched tokens
                 for token in text_obj[start:end]:
@@ -281,15 +281,18 @@ class SkillsGetter:
 
         skills = []
 
-        doc = self.nlp(text_obj.transformed_text)
-        for match_id, start, end in matcher(doc):
+        seen_matches = set()
+        
+        for match_id, start, end in matcher(text_obj.doc):
             id_ = matcher.vocab.strings[match_id]
-            if text_obj[start].is_matchable:
-                skills.append({'skill_id': id_+'_fullUni',
+            if  str(text_obj.doc[start:end]) not in seen_matches:
+                if text_obj[start].is_matchable:
+                    skills.append({'skill_id': id_+'_fullUni',
                                'score': 1,
-                               'doc_node_value': str(doc[start:end]),
+                               'doc_node_value': str(text_obj.doc[start:end]),
                                'doc_node_id': [start],
                                'type': 'full_uni'})
+                seen_matches.add(str(text_obj.doc[start:end]))
 
         return skills, text_obj
 
@@ -299,22 +302,22 @@ class SkillsGetter:
         matcher
     ):
 
-        skills_full = []
         skills = []
-        sub_matches = []
-        full_matches = []
 
-        doc = self.nlp(text_obj.lemmed())
-        for match_id, start, end in matcher(doc):
+
+        #doc = self.nlp(text_obj.lemmed())
+        seen_matches = set()
+        for match_id, start, end in matcher(text_obj.lemmed_doc):
             id_ = matcher.vocab.strings[match_id]
-
             # add
-            if text_obj[start].is_matchable:
-                skills.append({'skill_id': id_+'_oneToken',
-                               'doc_node_value': str(doc[start:end]),
+            
+            if str(text_obj.lemmed_doc[start:end]) not in seen_matches:
+                if text_obj.lemmed_list_words[start].is_matchable:
+                    skills.append({'skill_id': id_+'_oneToken',
+                               'doc_node_value': str(text_obj.lemmed_doc[start:end]),
                                'doc_node_id': [start],
                                'type': 'one_token'})
-
+                seen_matches.add(str(text_obj.lemmed_doc[start:end]))
         return skills
 
     def get_low_match_skills(
@@ -324,16 +327,16 @@ class SkillsGetter:
     ):
 
         skills = []
-        doc = self.nlp(text_obj.stemmed())
-
-        for match_id, start, end in matcher(doc):
+        
+        seen_matches = set()
+        for match_id, start, end in matcher(text_obj.stemmed_doc):
             id_ = matcher.vocab.strings[match_id]
-            # handle skill in the end of phrase
-            start = start if start < len(text_obj) else start - 1
-            if text_obj[start].is_matchable:
-                skills.append({'skill_id': id_+'_lowSurf',
-                               'doc_node_value': str(doc[start:end]),
+            
+            if str(text_obj.doc[start:end]) not in seen_matches:
+                if text_obj[start].is_matchable:
+                    skills.append({'skill_id': id_+'_lowSurf',
+                               'doc_node_value': str(text_obj.doc[start:end]),
                                'doc_node_id': list(range(start, end)),
                                'type': 'lw_surf'})
-
+                seen_matches.add(str(text_obj.doc[start:end]))
         return skills, text_obj

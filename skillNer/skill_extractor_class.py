@@ -61,7 +61,7 @@ class SkillExtractor:
     def annotate(
         self,
         text: str,
-        tresh: float = 0.5
+        tresh: float = 0.5,
     ) -> dict:
         """To annotate a given text and thereby extract skills from it.
 
@@ -119,23 +119,29 @@ class SkillExtractor:
             text_obj, self.matchers['full_matcher'])
 
         # tests
-
+        
         skills_abv, text_obj = self.skill_getters.get_abv_match_skills(
             text_obj, self.matchers['abv_matcher'])
-
+        
         skills_uni_full, text_obj = self.skill_getters.get_full_uni_match_skills(
             text_obj, self.matchers['full_uni_matcher'])
-
+        
         skills_low_form, text_obj = self.skill_getters.get_low_match_skills(
             text_obj, self.matchers['low_form_matcher'])
-
+        
         skills_on_token = self.skill_getters.get_token_match_skills(
             text_obj, self.matchers['token_matcher'])
+        
+
         full_sk = skills_full + skills_abv
         # process pseudo submatchers output conflicts
         to_process = skills_on_token + skills_low_form + skills_uni_full
+        
+        
         process_n_gram = self.utils.process_n_gram(to_process, text_obj)
-
+        
+        
+                    
         return {
             'text': text_obj.transformed_text,
             'results': {
@@ -212,7 +218,7 @@ class SkillExtractor:
         }
 
         # render
-        html = displacy.render(ex, style="ent", manual=True, options=options)
+        displacy.render(ex, style="ent", manual=True, options=options)
 
     def describe(
         self,

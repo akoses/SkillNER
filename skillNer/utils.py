@@ -7,6 +7,7 @@ import math
 
 # installed packs
 import numpy as np
+from regex import E
 import jellyfish
 # my packs
 from skillNer.text_class import Text
@@ -74,6 +75,7 @@ class Utils:
                look_up : return a mapper from skill_ids to its equivalent row index in corpus
         """
         len_ = len(text)
+        
         corpus = []
         look_up = {}
         unique_skills = list(set([match['skill_id'] for match in matches]))
@@ -110,9 +112,12 @@ class Utils:
         skill_len = self.skills_db[skill_id]['skill_len']
         # favorize the matched tokens uphead
         late_match_penalty_coef = 0.1
-        token_ids = sum([(1-late_match_penalty_coef*skill_name.index(token))
+        
+        try:
+            token_ids = sum([(1-late_match_penalty_coef*skill_name.index(token))
                          for token in matched_tokens])
-
+        except ValueError:
+            return 0
         return token_ids/skill_len
 
     def retain(self, text_obj, span, skill_id, sk_look, corpus):
@@ -136,6 +141,7 @@ class Utils:
             # if skill is n_gram (n>2)
             score = self.compute_w_ratio(
                 real_id, [text_obj[ind].lemmed for ind in s_gr_n])
+
 
         if type_ == 'fullUni':
             score = 1
@@ -181,16 +187,19 @@ class Utils:
 
         text_tokens = text_obj.lemmed(as_list=True)
         len_ = len(text_tokens)
-
+        
         corpus, look_up = self.get_corpus(text_tokens, matches)
-
+        
         # generate spans (a span is a list of tokens where one or more skills are matched)
 
         # co-occurence of tokens aij : co-occurence count of token i with token j
+       
         co_occ = np.matmul(corpus.T, corpus)
-
+        
         # create spans of tokens that co-occured
+       
         clusters = self.get_clusters(co_occ)
+        
 
         # one hot encoding of clusters
         # example [0,1,2] => [1,1,1,0,0,0] , encoding length  = text length
@@ -201,13 +210,16 @@ class Utils:
 
         # filter and score
         new_spans = []
+        span_count = 0
         for span_conflict in spans_conflicts:
             span, skill_ids = span_conflict
             span_scored_skills = []
             types = []
             scores = []
             lens = []
+            
             for sk_id in skill_ids:
+                
                 # score skill given span
                 scored_sk_obj = self.retain(
                     text_obj, span, sk_id, look_up, corpus)
@@ -215,6 +227,7 @@ class Utils:
                 types.append(scored_sk_obj['type'])
                 lens.append(scored_sk_obj['len'])
                 scores.append(scored_sk_obj['score'])
+                span_count += 1
             # extract best candiate for a given span
             if 'oneToken' in types and len(set(types)) > 1:
                 # having a ngram skill with other types in span condiates :
@@ -232,4 +245,5 @@ class Utils:
                 max_score_index = np.array(scores).argmax()
                 new_spans.append(span_scored_skills[max_score_index])
 
+       
         return new_spans

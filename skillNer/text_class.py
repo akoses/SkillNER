@@ -153,10 +153,13 @@ class Text:
         self.list_words = []
 
         # construct list of words and create meta data object
-        doc = nlp(self.transformed_text)
+        
+        self.doc = nlp(self.transformed_text)
+        self.abv_doc = nlp(self.abv_text)
 
-        for token in doc:
+        for token in self.doc:
             # create word object
+            
             word = Word(token.text)
 
             # lem and stem
@@ -170,7 +173,7 @@ class Text:
                 word.is_matchable = False
 
             self.list_words.append(word)
-
+        
         # detect unmatchable words
         for redundant_word in S_GRAM_REDUNDANT:
             list_index = find_index_phrase(
@@ -179,6 +182,44 @@ class Text:
             for index in list_index:
                 self[index].is_matchable = False
 
+
+
+        # Create seperate docs for each context
+        self.lemmed_doc = nlp(self.lemmed())
+        self.lemmed_list_words = []
+        for token in self.lemmed_doc:
+            word = Word(token.text)
+
+            # lem and stem
+            word.lemmed = token.lemma_
+            word.stemmed = stem_text(token.text)
+
+            # stop word and machability
+            word.is_stop_word = token.is_stop
+            # a stop word is unmatchable
+            if token.is_stop:
+                word.is_matchable = False
+
+            self.lemmed_list_words.append(word)
+        
+        # Create seperate doc for stemmed context
+        self.stemmed_list_words = []
+        self.stemmed_doc = nlp(self.stemmed())
+
+        for token in self.stemmed_doc:
+            word = Word(token.text)
+
+            # lem and stem
+            word.lemmed = token.lemma_
+            word.stemmed = stem_text(token.text)
+
+            # stop word and machability
+            word.is_stop_word = token.is_stop
+            # a stop word is unmatchable
+            if token.is_stop:
+                word.is_matchable = False
+
+            self.stemmed_list_words.append(word)
     # return stemmed form of text either as str or list of words
     def stemmed(
         self,
@@ -245,7 +286,7 @@ class Text:
         """
 
         list_lems = [word.lemmed for word in self.list_words]
-
+        
         if as_list:
             return list_lems
 
